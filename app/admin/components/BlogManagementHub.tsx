@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { LayoutGrid, List, Trash2, Eye, CheckCircle, XCircle, BarChart3 } from 'lucide-react';
+import { LayoutGrid, List, Trash2, Eye, CheckCircle, XCircle, BarChart3, Loader2 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import axios from 'axios';
 import BlogPreviewModal from './BlogPreviewModal'; 
@@ -40,6 +40,11 @@ const BlogManagementHub: React.FC = () => {
   const [chartData, setChartData] = useState<any[]>([]);
   const [previewBlog, setPreviewBlog] = useState<any>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isBlogsLoading, setIsBlogsLoading] = useState<boolean>(true);
+  const [isChartLoading, setIsChartLoading] = useState<boolean>(true);
+  const [publishingId, setPublishingId] = useState<string | number | null>(null);
+  const [previewLoadingId, setPreviewLoadingId] = useState<string | number | null>(null);
+  const [deletingId, setDeletingId] = useState<string | number | null>(null);
 
   useEffect(() => {
     fetchBlogs();
@@ -47,39 +52,66 @@ const BlogManagementHub: React.FC = () => {
   }, []);
 
   const fetchBlogs = async () => {
+    setIsBlogsLoading(true);
     try {
       const res = await axios.get('/api/admin/all-blogs');
       setBlogs(res.data);
     } catch (err) {
       console.error(err);
+    } finally {
+      setIsBlogsLoading(false);
     }
   };
 
   const fetchChartData = async () => {
+    setIsChartLoading(true);
     try {
       const res = await axios.get('/api/admin/blog-stats-chart');
       setChartData(res.data);
     } catch (err) {
       console.error(err);
+    } finally {
+      setIsChartLoading(false);
     }
   };
 
   const handlePreview = async (id: string | number) => {
+    setPreviewLoadingId(id);
     try {
       const res = await axios.get(`/api/admin/blog-preview/${id}`);
       setPreviewBlog(res.data);
       setIsPreviewOpen(true);
     } catch (err) {
       console.error(err);
+    } finally {
+      setPreviewLoadingId(null);
     }
   };
 
   const togglePublish = async (id: string | number, currentStatus: boolean) => {
+    setPublishingId(id);
     try {
       await axios.put(`/api/admin/toggle-publish/${id}`, { status: !currentStatus });
-      fetchBlogs();
+      await fetchBlogs();
     } catch (err) {
       console.error(err);
+    } finally {
+      setPublishingId(null);
+    }
+  };
+
+  const deleteBlog = async (id: string | number) => {
+    const confirmed = window.confirm("Are you sure? This blog will be permanently deleted.");
+    if (!confirmed) return;
+
+    setDeletingId(id);
+    try {
+      await axios.delete(`/api/admin/delete-blog/${id}`);
+      await fetchBlogs();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -116,8 +148,16 @@ const BlogManagementHub: React.FC = () => {
       {/* --- CONDITIONAL RENDERING --- */}
       {view === 'chart' && (
         <div className="h-[350px] w-full bg-slate-50 dark:bg-slate-800/20 p-4 rounded-3xl border border-dashed border-slate-200 dark:border-slate-700">
-           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData}>
+          {isChartLoading ? (
+            <div className="w-full h-full flex items-center justify-center text-slate-500 font-medium">
+              <div className="inline-flex items-center gap-2">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Loading chart...
+              </div>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData}>
               <defs>
                 <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
@@ -158,13 +198,22 @@ const BlogManagementHub: React.FC = () => {
                 fill="url(#colorCount)" 
                 animationDuration={1500}
               />
-            </AreaChart>
-          </ResponsiveContainer>
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
         </div>
       )}
 
       {view === 'grid' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        isBlogsLoading ? (
+          <div className="py-16 text-center text-slate-500 font-medium">
+            <div className="inline-flex items-center gap-2">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              Loading blogs...
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {blogs.map(blog => (
             <div key={blog.id} className="group bg-slate-50 dark:bg-slate-800/50 rounded-3xl overflow-hidden border border-slate-100 dark:border-slate-800 hover:shadow-xl transition-all duration-300">
               <div className="relative aspect-video">
@@ -190,21 +239,34 @@ const BlogManagementHub: React.FC = () => {
                     <span className="text-sm text-slate-500 truncate max-w-[80px]">{blog.author || "Unknown Author"}</span>
                   </div>
                   <div className="flex gap-1">
-                    <button onClick={() => togglePublish(blog.id, blog.is_published)} className="p-2 text-slate-400 hover:text-indigo-600 transition-colors bg-white dark:bg-slate-800 rounded-xl shadow-sm">
-                      {blog.is_published ? <XCircle size={18} /> : <CheckCircle size={18} />}
+                    <button
+                      onClick={() => togglePublish(blog.id, blog.is_published)}
+                      disabled={publishingId === blog.id}
+                      className="p-2 text-slate-400 hover:text-indigo-600 transition-colors bg-white dark:bg-slate-800 rounded-xl shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {publishingId === blog.id ? <Loader2 size={18} className="animate-spin" /> : blog.is_published ? <XCircle size={18} /> : <CheckCircle size={18} />}
                     </button>
-                    <button onClick={() => handlePreview(blog.id)} className="p-2 text-slate-400 hover:text-blue-500 transition-colors bg-white dark:bg-slate-800 rounded-xl shadow-sm">
-                      <Eye size={18} />
+                    <button
+                      onClick={() => handlePreview(blog.id)}
+                      disabled={previewLoadingId === blog.id}
+                      className="p-2 text-slate-400 hover:text-blue-500 transition-colors bg-white dark:bg-slate-800 rounded-xl shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {previewLoadingId === blog.id ? <Loader2 size={18} className="animate-spin" /> : <Eye size={18} />}
                     </button>
-                    <button className="p-2 text-slate-400 hover:text-red-500 transition-colors bg-white dark:bg-slate-800 rounded-xl shadow-sm">
-                      <Trash2 size={18} />
+                    <button
+                      onClick={() => deleteBlog(blog.id)}
+                      disabled={deletingId === blog.id}
+                      className="p-2 text-slate-400 hover:text-red-500 transition-colors bg-white dark:bg-slate-800 rounded-xl shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {deletingId === blog.id ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
                     </button>
                   </div>
                 </div>
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )
       )}
 
       {view === 'table' && (
@@ -219,7 +281,16 @@ const BlogManagementHub: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-              {blogs.map(blog => (
+              {isBlogsLoading ? (
+                <tr>
+                  <td colSpan={4} className="px-4 py-12 text-center text-slate-500 font-medium">
+                    <div className="inline-flex items-center gap-2">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Loading blogs...
+                    </div>
+                  </td>
+                </tr>
+              ) : blogs.map(blog => (
                 <tr key={blog.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
                   <td className="px-4 py-4 max-w-xs truncate font-semibold dark:text-white">{blog.title}</td>
                   <td className="px-4 py-4 text-slate-500 text-sm">{blog.author}</td>
@@ -229,11 +300,33 @@ const BlogManagementHub: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-4 py-4 text-right space-x-2">
-                    <button onClick={() => togglePublish(blog.id, blog.is_published)} className="p-2 text-slate-400 hover:text-indigo-600 transition-colors">
-                      {blog.is_published ? <XCircle size={18} title="Unpublish" /> : <CheckCircle size={18} title="Publish" />}
+                    <button
+                      onClick={() => togglePublish(blog.id, blog.is_published)}
+                      disabled={publishingId === blog.id}
+                      className="p-2 text-slate-400 hover:text-indigo-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {publishingId === blog.id ? (
+                        <Loader2 size={18} className="animate-spin" />
+                      ) : blog.is_published ? (
+                        <XCircle size={18} title="Unpublish" />
+                      ) : (
+                        <CheckCircle size={18} title="Publish" />
+                      )}
                     </button>
-                    <button onClick={() => handlePreview(blog.id)} className="p-2 text-slate-400 hover:text-blue-500 transition-colors"><Eye size={18} /></button>
-                    <button className="p-2 text-slate-400 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
+                    <button
+                      onClick={() => handlePreview(blog.id)}
+                      disabled={previewLoadingId === blog.id}
+                      className="p-2 text-slate-400 hover:text-blue-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {previewLoadingId === blog.id ? <Loader2 size={18} className="animate-spin" /> : <Eye size={18} />}
+                    </button>
+                    <button
+                      onClick={() => deleteBlog(blog.id)}
+                      disabled={deletingId === blog.id}
+                      className="p-2 text-slate-400 hover:text-red-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {deletingId === blog.id ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+                    </button>
                   </td>
                 </tr>
               ))}

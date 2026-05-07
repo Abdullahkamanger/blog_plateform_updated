@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Trash2, ShieldCheck } from 'lucide-react';
+import { Search, Trash2, Loader2 } from 'lucide-react';
 import axios from 'axios';
 
 interface User {
@@ -14,36 +14,48 @@ interface User {
 const UserManagementTable: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [roleUpdatingId, setRoleUpdatingId] = useState<string | number | null>(null);
+  const [deletingId, setDeletingId] = useState<string | number | null>(null);
 
   useEffect(() => {
     fetchUsers();
   }, [searchTerm]);
 
   const fetchUsers = async () => {
+    setIsLoading(true);
     try {
       const res = await axios.get(`/api/admin/users?search=${searchTerm}`);
       setUsers(res.data);
     } catch (err) {
       console.error("Failed to fetch users", err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleUpdateRole = async (id: string | number, newRole: string) => {
+    setRoleUpdatingId(id);
     try {
       await axios.put(`/api/admin/update-role/${id}`, { role: newRole });
-      fetchUsers();
+      await fetchUsers();
     } catch (err) {
       console.error("Failed to update user role", err);
+    } finally {
+      setRoleUpdatingId(null);
     }
   };
 
   const handleDelete = async (id: string | number) => {
     if (window.confirm("Are you sure? This action cannot be undone.")) {
+      setDeletingId(id);
       try {
         await axios.delete(`/api/admin/users/${id}`);
-        fetchUsers();
+        await fetchUsers();
       } catch (err) {
         console.error("Failed to delete user", err);
+      } finally {
+        setDeletingId(null);
       }
     }
   };
@@ -70,7 +82,16 @@ const UserManagementTable: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-            {users.length > 0 ? users.map(user => (
+            {isLoading ? (
+              <tr>
+                <td colSpan={3} className="px-4 py-12 text-center text-slate-500 font-medium">
+                  <div className="inline-flex items-center gap-2">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Loading users...
+                  </div>
+                </td>
+              </tr>
+            ) : users.length > 0 ? users.map(user => (
               <tr key={user.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                 <td className="px-4 py-4">
                   <p className="font-bold text-slate-800 dark:text-white capitalize">{user.name}</p>
@@ -80,6 +101,7 @@ const UserManagementTable: React.FC = () => {
                   <select 
                     value={user.role}
                     onChange={(e) => handleUpdateRole(user.id, e.target.value)}
+                    disabled={roleUpdatingId === user.id}
                     className="bg-slate-50 dark:bg-slate-800 border-none rounded-lg text-sm font-bold text-slate-600 dark:text-slate-300 py-1 px-2 outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
                   >
                     <option value="READER">Reader</option>
@@ -90,10 +112,15 @@ const UserManagementTable: React.FC = () => {
                 <td className="px-4 py-4 text-right space-x-3">
                   <button 
                     onClick={() => handleDelete(user.id)}
-                    className="p-2 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-lg hover:bg-red-500 hover:text-white dark:hover:bg-red-600 transition-all shadow-sm"
+                    disabled={deletingId === user.id}
+                    className="p-2 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-lg hover:bg-red-500 hover:text-white dark:hover:bg-red-600 transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-red-50 disabled:hover:text-red-500 inline-flex items-center justify-center"
                     title="Delete User"
                   >
-                    <Trash2 size={18} />
+                    {deletingId === user.id ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : (
+                      <Trash2 size={18} />
+                    )}
                   </button>
                 </td>
               </tr>

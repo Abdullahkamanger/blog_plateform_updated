@@ -115,7 +115,8 @@ const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
           case 'header': {
             const Tag = `h${block.data.level || 2}` as keyof JSX.IntrinsicElements;
             const text = block.data.text || '';
-            const id = text.toLowerCase().replace(/ /g, '-');
+            const plainText = text.replace(/<[^>]+>/g, '').trim();
+            const id = plainText.toLowerCase().replace(/\s+/g, '-');
             const sizeClass =
               {
                 2: 'text-4xl md:text-5xl',
@@ -128,8 +129,8 @@ const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
                 id={id}
                 key={index}
                 className={`${sizeClass} font-black my-8 dark:text-white text-slate-900 tracking-tight leading-tight`}
+                dangerouslySetInnerHTML={{ __html: text }}
               >
-                {text}
               </Tag>
             );
           }
