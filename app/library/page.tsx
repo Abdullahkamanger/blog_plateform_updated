@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { useBlogs } from '../../context/BlogContext';
 import BlogGrid from '../../components/blog/BlogGrid';
+import { parseEditorJSContent } from '../../lib/content-parser';
 
 interface Blog {
   id: string | number;
@@ -30,7 +31,7 @@ const Library = () => {
     .map((blog) => ({
       id: blog._id || blog.id,
       title: blog.title,
-      description: blog.description || blog.content?.substring(0, 200) + '...' || 'No description available',
+      description: blog.description || parseEditorJSContent(blog.content),
       category: blog.category || 'General',
       date: new Date(blog.created_at).toLocaleDateString(),
       image: blog.cover_image || '/placeholder-image.jpg',
@@ -45,7 +46,7 @@ const Library = () => {
     .map((blog) => ({
       id: blog._id || blog.id,
       title: blog.title,
-      description: blog.description || blog.content?.substring(0, 200) + '...' || 'No description available',
+      description: blog.description || parseEditorJSContent(blog.content),
       category: blog.category || 'General',
       date: new Date(blog.created_at).toLocaleDateString(),
       image: blog.cover_image || '/placeholder-image.jpg',
