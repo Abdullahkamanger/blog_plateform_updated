@@ -7,22 +7,41 @@ import BlogFilters from '../components/blog/BlogFilters';
 import { useBlogs } from '../context/BlogContext';
 
 interface Blog {
-  _id?: string;
+  id: string | number;
   title: string;
   description: string;
   category: string;
-  [key: string]: any;
+  date: string;
+  image: string;
+  content?: string;
+  likes: number;
+  dislikes: number;
+  saves: number;
 }
 
 const Home = () => {
   const { blogs, loading, error } = useBlogs() as {
-    blogs: Blog[];
+    blogs: any[];
     loading: boolean;
     error: string | null;
   };
   
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Map database blogs to BlogGrid format
+  const mappedBlogs = blogs.map((blog) => ({
+    id: blog._id || blog.id,
+    title: blog.title,
+    description: blog.description || blog.content?.substring(0, 200) + '...' || 'No description available',
+    category: blog.category || 'General',
+    date: new Date(blog.created_at).toLocaleDateString(),
+    image: blog.cover_image || '/placeholder-image.jpg',
+    content: blog.content,
+    likes: blog.likes_count || 0,
+    dislikes: blog.dislikes_count || 0,
+    saves: blog.saves_count || 0,
+  }));
 
   if (loading) {
     return (
@@ -50,7 +69,7 @@ const Home = () => {
   }
 
   // Filter Logic
-  const filteredBlogs = blogs.filter((blog) => {
+  const filteredBlogs = mappedBlogs.filter((blog) => {
     const matchesCategory =
       activeCategory === 'All' || blog.category === activeCategory;
     

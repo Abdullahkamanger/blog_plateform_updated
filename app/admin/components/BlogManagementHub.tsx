@@ -308,9 +308,9 @@ const BlogManagementHub: React.FC = () => {
                       {publishingId === blog.id ? (
                         <Loader2 size={18} className="animate-spin" />
                       ) : blog.is_published ? (
-                        <XCircle size={18} title="Unpublish" />
+                        <XCircle size={18} />
                       ) : (
-                        <CheckCircle size={18} title="Publish" />
+                        <CheckCircle size={18} />
                       )}
                     </button>
                     <button

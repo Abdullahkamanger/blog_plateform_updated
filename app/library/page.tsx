@@ -6,19 +6,54 @@ import BlogGrid from '../../components/blog/BlogGrid';
 
 interface Blog {
   id: string | number;
-  [key: string]: any;
+  title: string;
+  description: string;
+  category: string;
+  date: string;
+  image: string;
+  content?: string;
+  likes: number;
+  dislikes: number;
+  saves: number;
 }
 
 const Library = () => {
   const { blogs, likedIds, savedIds } = useBlogs() as {
-    blogs: Blog[];
+    blogs: any[];
     likedIds: (string | number)[];
     savedIds: (string | number)[];
   };
 
-  // Filter our "Database" for blogs the user interacted with
-  const savedBlogs = blogs.filter((b) => savedIds.includes(b.id));
-  const likedBlogs = blogs.filter((b) => likedIds.includes(b.id));
+  // Filter our "Database" for blogs the user interacted with and map to BlogGrid structure
+  const savedBlogs = blogs
+    .filter((b) => savedIds.includes(b._id || b.id))
+    .map((blog) => ({
+      id: blog._id || blog.id,
+      title: blog.title,
+      description: blog.description || blog.content?.substring(0, 200) + '...' || 'No description available',
+      category: blog.category || 'General',
+      date: new Date(blog.created_at).toLocaleDateString(),
+      image: blog.cover_image || '/placeholder-image.jpg',
+      content: blog.content,
+      likes: blog.likes_count || 0,
+      dislikes: blog.dislikes_count || 0,
+      saves: blog.saves_count || 0,
+    }));
+
+  const likedBlogs = blogs
+    .filter((b) => likedIds.includes(b._id || b.id))
+    .map((blog) => ({
+      id: blog._id || blog.id,
+      title: blog.title,
+      description: blog.description || blog.content?.substring(0, 200) + '...' || 'No description available',
+      category: blog.category || 'General',
+      date: new Date(blog.created_at).toLocaleDateString(),
+      image: blog.cover_image || '/placeholder-image.jpg',
+      content: blog.content,
+      likes: blog.likes_count || 0,
+      dislikes: blog.dislikes_count || 0,
+      saves: blog.saves_count || 0,
+    }));
 
   return (
     <motion.div

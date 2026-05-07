@@ -8,7 +8,6 @@ import {
   Send, 
   Edit3, 
   Archive, 
-  Restore, 
   Trash2,
   Plus,
   Eye,

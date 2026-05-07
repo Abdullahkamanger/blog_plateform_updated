@@ -190,11 +190,11 @@ const Editor: React.FC<EditorProps> = ({ data, onChange }) => {
               levels: [2, 3, 4],
               defaultLevel: 2,
             },
-          },
+          } as any,
           list: {
             class: List,
             inlineToolbar: true,
-          },
+          } as any,
           image: {
             class: ImageTool,
             config: {
@@ -202,7 +202,7 @@ const Editor: React.FC<EditorProps> = ({ data, onChange }) => {
                 byFile: '/api/blogs/upload-image',
               },
             },
-          },
+          } as any,
           quote: {
             class: Quote,
             inlineToolbar: true,
@@ -210,7 +210,7 @@ const Editor: React.FC<EditorProps> = ({ data, onChange }) => {
               quotePlaceholder: 'Enter a quote',
               captionPlaceholder: "Quote's author",
             },
-          },
+          } as any,
           code: Code,
           delimiter: Delimiter,
           inlineCode: InlineCode,
@@ -221,10 +221,10 @@ const Editor: React.FC<EditorProps> = ({ data, onChange }) => {
               rows: 2,
               cols: 3,
             },
-          },
+          } as any,
           embed: {
             class: SimpleEmbedTool,
-          },
+          } as any,
         },
         onChange: async (api) => {
           const content = await api.saver.save();

@@ -113,7 +113,7 @@ const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
       {blocks.map((block, index) => {
         switch (block.type) {
           case 'header': {
-            const Tag = `h${block.data.level || 2}` as keyof JSX.IntrinsicElements;
+            const Tag = `h${block.data.level || 2}` as keyof React.JSX.IntrinsicElements;
             const text = block.data.text || '';
             const plainText = text.replace(/<[^>]+>/g, '').trim();
             const id = plainText.toLowerCase().replace(/\s+/g, '-');

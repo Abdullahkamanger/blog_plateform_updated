@@ -1,7 +1,12 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
-import Editor from '../../components/editor/Editor';
+import { useState, useCallback, useEffect, useRef, Suspense } from 'react';
+import dynamic from 'next/dynamic';
+
+const Editor = dynamic(() => import('../../components/editor/Editor'), {
+  ssr: false,
+  loading: () => <div className="h-96 flex items-center justify-center">Loading editor...</div>
+});
 import { motion } from 'framer-motion';
 import { Save, List as ListIcon, FileText } from 'lucide-react';
 import axios from 'axios';
@@ -15,7 +20,7 @@ interface Milestone {
   };
 }
 
-const CreatePost = () => {
+function CreatePostContent() {
   const { token, user } = useBlogs() as any;
   const searchParams = useSearchParams();
   const draftId = searchParams.get('draftId');
@@ -282,6 +287,14 @@ const CreatePost = () => {
         </main>
       </div>
     </div>
+  );
+}
+
+const CreatePost = () => {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <CreatePostContent />
+    </Suspense>
   );
 };
 
