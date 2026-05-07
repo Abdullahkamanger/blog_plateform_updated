@@ -9,7 +9,14 @@ export async function GET() {
   try {
     await connectDB();
     // 1. Fetch public blogs and populate the author's name
-    const blogs = await Blog.find({ is_published: true })
+    // Handle backward compatibility: check for both status field and is_published
+    const blogs = await Blog.find({ 
+      $or: [
+        { status: 'PUBLISHED' },
+        { status: { $exists: false }, is_published: true }
+      ],
+      is_archived: { $ne: true }
+    })
       .populate("author_id", "name role bio social_links")
       .sort({ created_at: -1 });
 
@@ -71,7 +78,8 @@ export async function POST(request: Request) {
       cover_image,
       category,
       author_id: session.user.id,
-      is_published: false, // Wait for admin approval
+      status: 'PENDING', // Submit for admin approval
+      is_published: false, // Keep for backward compatibility
     });
 
     return NextResponse.json(

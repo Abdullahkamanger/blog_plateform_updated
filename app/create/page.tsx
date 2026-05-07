@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import Editor from '../../components/editor/Editor';
 import { motion } from 'framer-motion';
-import { Save, List as ListIcon } from 'lucide-react';
+import { Save, List as ListIcon, FileText } from 'lucide-react';
 import axios from 'axios';
 import { useBlogs } from '../../context/BlogContext';
+import { useSearchParams } from 'next/navigation';
 
 interface Milestone {
   type: string;
@@ -16,13 +17,125 @@ interface Milestone {
 
 const CreatePost = () => {
   const { token, user } = useBlogs() as any;
+  const searchParams = useSearchParams();
+  const draftId = searchParams.get('draftId');
+  
   const [title, setTitle] = useState<string>('');
   const [coverImage, setCoverImage] = useState<string>('');
   const [blocks, setBlocks] = useState<any[]>([]);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [isDraftSaving, setIsDraftSaving] = useState<boolean>(false);
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(draftId);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const autoSaveRef = useRef<NodeJS.Timeout | null>(null);
+  const [isLoadingDraft, setIsLoadingDraft] = useState<boolean>(!!draftId);
 
   // Extract headings for the dynamic sidebar
   const milestones: Milestone[] = blocks.filter((b) => b.type === 'header') as Milestone[];
+
+  // Load draft data if draftId is provided
+  useEffect(() => {
+    if (draftId) {
+      loadDraft(draftId);
+    }
+  }, [draftId]);
+
+  // Auto-save functionality
+  useEffect(() => {
+    if (autoSaveRef.current) {
+      clearTimeout(autoSaveRef.current);
+    }
+
+    autoSaveRef.current = setTimeout(() => {
+      if (title || blocks.length > 0) {
+        handleSaveDraft(true); // Auto-save
+      }
+    }, 30000); // 30 seconds
+
+    return () => {
+      if (autoSaveRef.current) {
+        clearTimeout(autoSaveRef.current);
+      }
+    };
+  }, [title, coverImage, blocks]);
+
+  const loadDraft = async (id: string) => {
+    try {
+      setIsLoadingDraft(true);
+      // For now, we'll need to fetch from a new endpoint or modify existing one
+      // This is a simplified version - in production you'd have a dedicated endpoint
+      const response = await axios.get(`/api/blogs/author`);
+      const draft = response.data.find((blog: any) => blog._id === id && blog.status === 'DRAFT');
+      
+      if (draft) {
+        setTitle(draft.title);
+        setCoverImage(draft.cover_image || '');
+        if (draft.content) {
+          try {
+            const content = typeof draft.content === 'string' 
+              ? JSON.parse(draft.content) 
+              : draft.content;
+            setBlocks(content.blocks || []);
+          } catch (e) {
+            setBlocks([]);
+          }
+        }
+        setLastSaved(new Date(draft.last_saved_at));
+        setCurrentDraftId(id);
+      }
+    } catch (error) {
+      console.error('Failed to load draft:', error);
+      alert('Failed to load draft');
+    } finally {
+      setIsLoadingDraft(false);
+    }
+  };
+
+  const handleSaveDraft = async (isAutoSave = false) => {
+    if (!title && !isAutoSave) {
+      alert('Please enter a title before saving');
+      return;
+    }
+    
+    if (!title && isAutoSave) {
+      return; // Don't auto-save empty drafts
+    }
+
+    setIsDraftSaving(true);
+    
+    const blogData = {
+      title,
+      cover_image: coverImage,
+      content: { blocks },
+      category: 'Tech',
+      blogId: currentDraftId,
+    };
+
+    try {
+      const response = await axios.post('/api/blogs/draft', blogData);
+      
+      if (!currentDraftId) {
+        setCurrentDraftId(response.data.blogId);
+        // Update URL to include draftId without page reload
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.set('draftId', response.data.blogId);
+        window.history.replaceState({}, '', newUrl.toString());
+      }
+      
+      setLastSaved(new Date());
+      
+      if (!isAutoSave) {
+        alert('Draft saved successfully!');
+      }
+    } catch (err: any) {
+      console.error(err);
+      if (!isAutoSave) {
+        alert(err.response?.data?.error || 'Failed to save draft.');
+      }
+    } finally {
+      setIsDraftSaving(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!title) return alert("Please enter a title");
@@ -60,13 +173,30 @@ const CreatePost = () => {
               {user?.name?.[0] || 'A'}
             </div>
             <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Drafting by {user?.name || 'You'}</p>
-              <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Untitled Masterpiece</p>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                {currentDraftId ? 'Editing Draft' : 'Creating New Post'} by {user?.name || 'You'}
+              </p>
+              <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                {title || 'Untitled Masterpiece'}
+                {lastSaved && (
+                  <span className="ml-2 text-xs text-slate-400">
+                    (Saved {lastSaved.toLocaleTimeString()})
+                  </span>
+                )}
+              </p>
             </div>
           </div>
           
           <div className="flex items-center gap-4">
-             <button
+            <button
+              onClick={() => handleSaveDraft(false)}
+              disabled={isDraftSaving}
+              className="px-6 py-2.5 bg-slate-600 hover:bg-slate-700 disabled:bg-slate-400 text-white rounded-full font-medium shadow-lg shadow-slate-200 dark:shadow-none transition-all active:scale-95 flex items-center gap-2"
+            >
+              {isDraftSaving ? <span className="animate-spin text-lg">◌</span> : <FileText size={18} />}
+              Save Draft
+            </button>
+            <button
               onClick={handleSave}
               disabled={isSaving}
               className="px-8 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 text-white rounded-full font-bold shadow-lg shadow-indigo-200 dark:shadow-none transition-all active:scale-95 flex items-center gap-2"

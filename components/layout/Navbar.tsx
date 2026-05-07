@@ -69,7 +69,10 @@ const Navbar: React.FC = () => {
                     <Link href="/admin" className="text-indigo-600 font-bold border-r border-slate-300 dark:border-slate-600 pr-4">Admin Panel</Link>
                   )}
                   {(user.role === 'AUTHOR' && user.status === 'APPROVED') && (
-                    <Link href="/create" className="text-emerald-600 font-bold border-r border-slate-300 dark:border-slate-600 pr-4">Write Post</Link>
+                    <>
+                      <Link href="/author" className="text-indigo-600 font-bold border-r border-slate-300 dark:border-slate-600 pr-4">Dashboard</Link>
+                      <Link href="/create" className="text-emerald-600 font-bold border-r border-slate-300 dark:border-slate-600 pr-4">Write Post</Link>
+                    </>
                   )}
                   {user.status === 'PENDING' && (
                     <span className="text-amber-500 text-xs font-medium italic">Approval Pending...</span>
@@ -134,7 +137,10 @@ const Navbar: React.FC = () => {
                       <Link href="/admin" onClick={() => setIsOpen(false)} className="text-indigo-600 font-bold">Admin Panel</Link>
                     )}
                     {(user.role === 'AUTHOR' && user.status === 'APPROVED') && (
-                      <Link href="/create" onClick={() => setIsOpen(false)} className="text-emerald-600 font-bold">Write Post</Link>
+                      <>
+                        <Link href="/author" onClick={() => setIsOpen(false)} className="text-indigo-600 font-bold">Dashboard</Link>
+                        <Link href="/create" onClick={() => setIsOpen(false)} className="text-emerald-600 font-bold">Write Post</Link>
+                      </>
                     )}
                     {user.status === 'PENDING' && (
                       <span className="text-amber-500 text-xs font-medium italic">Approval Pending...</span>

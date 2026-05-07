@@ -19,7 +19,11 @@ export async function GET(
 
     const blog = await Blog.findOne({
       _id: id,
-      is_published: true,
+      $or: [
+        { status: 'PUBLISHED' },
+        { status: { $exists: false }, is_published: true }
+      ],
+      is_archived: { $ne: true },
     }).populate("author_id", "name role bio social_links");
 
     if (!blog) {
