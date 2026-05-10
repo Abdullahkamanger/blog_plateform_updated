@@ -28,7 +28,7 @@ interface Blog {
   id: string | number;
   title: string;
   author: string;
-  is_published: boolean;
+  status: 'DRAFT' | 'PENDING' | 'PUBLISHED';
   image?: string;
   category?: string;
   date?: string;
@@ -223,8 +223,12 @@ const BlogManagementHub: React.FC = () => {
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
                 <div className="absolute top-4 right-4">
-                   <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${blog.is_published ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white shadow-lg'}`}>
-                    {blog.is_published ? 'Live' : 'Draft'}
+                   <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                     blog.status === 'PUBLISHED' ? 'bg-emerald-500 text-white' : 
+                     blog.status === 'PENDING' ? 'bg-amber-500 text-white shadow-lg' : 
+                     'bg-slate-500 text-white'
+                   }`}>
+                    {blog.status}
                   </span>
                 </div>
               </div>
@@ -240,11 +244,11 @@ const BlogManagementHub: React.FC = () => {
                   </div>
                   <div className="flex gap-1">
                     <button
-                      onClick={() => togglePublish(blog.id, blog.is_published)}
+                      onClick={() => togglePublish(blog.id, blog.status === 'PUBLISHED')}
                       disabled={publishingId === blog.id}
                       className="p-2 text-slate-400 hover:text-indigo-600 transition-colors bg-white dark:bg-slate-800 rounded-xl shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      {publishingId === blog.id ? <Loader2 size={18} className="animate-spin" /> : blog.is_published ? <XCircle size={18} /> : <CheckCircle size={18} />}
+                      {publishingId === blog.id ? <Loader2 size={18} className="animate-spin" /> : blog.status === 'PUBLISHED' ? <XCircle size={18} /> : <CheckCircle size={18} />}
                     </button>
                     <button
                       onClick={() => handlePreview(blog.id)}
@@ -295,19 +299,23 @@ const BlogManagementHub: React.FC = () => {
                   <td className="px-4 py-4 max-w-xs truncate font-semibold dark:text-white">{blog.title}</td>
                   <td className="px-4 py-4 text-slate-500 text-sm">{blog.author}</td>
                   <td className="px-4 py-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${blog.is_published ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
-                      {blog.is_published ? 'Live' : 'Draft'}
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                      blog.status === 'PUBLISHED' ? 'bg-emerald-100 text-emerald-600' : 
+                      blog.status === 'PENDING' ? 'bg-amber-100 text-amber-600' : 
+                      'bg-slate-100 text-slate-600'
+                    }`}>
+                      {blog.status}
                     </span>
                   </td>
                   <td className="px-4 py-4 text-right space-x-2">
                     <button
-                      onClick={() => togglePublish(blog.id, blog.is_published)}
+                      onClick={() => togglePublish(blog.id, blog.status === 'PUBLISHED')}
                       disabled={publishingId === blog.id}
                       className="p-2 text-slate-400 hover:text-indigo-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       {publishingId === blog.id ? (
                         <Loader2 size={18} className="animate-spin" />
-                      ) : blog.is_published ? (
+                      ) : blog.status === 'PUBLISHED' ? (
                         <XCircle size={18} />
                       ) : (
                         <CheckCircle size={18} />

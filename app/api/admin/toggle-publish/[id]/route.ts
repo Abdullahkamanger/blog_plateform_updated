@@ -16,12 +16,17 @@ export async function PUT(
 
     const { id } = await params;
     const { status } = await request.json();
+    // Determine new status based on input
+    const newStatus = status === true ? 'PUBLISHED' : 'DRAFT';
     
     await connectDB();
     
     const blog = await Blog.findByIdAndUpdate(
       id,
-      { is_published: status },
+      { 
+        status: newStatus,
+        is_published: newStatus === 'PUBLISHED' // Keep in sync for compatibility
+      },
       { new: true }
     );
 
@@ -29,7 +34,10 @@ export async function PUT(
       return NextResponse.json({ message: "Blog not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ message: "Publish status updated" }, { status: 200 });
+    return NextResponse.json({ 
+      message: `Blog status updated to ${newStatus}`,
+      status: newStatus 
+    }, { status: 200 });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

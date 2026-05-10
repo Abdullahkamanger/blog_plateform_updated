@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
-import User from "@/models/User";
 import Blog from "@/models/Blog";
 import { auth } from "@/lib/auth";
 import { requireAdmin } from "@/lib/authUtils";
@@ -13,20 +12,19 @@ export async function GET() {
     }
 
     await connectDB();
+    const pendingBlogs = await Blog.find({ status: 'PENDING', is_archived: { $ne: true } })
+      .populate("author_id", "name")
+      .sort({ created_at: -1 });
     
-    const [usersCount, pendingAuthorsCount, blogsCount, pendingBlogsCount] = await Promise.all([
-      User.countDocuments({}),
-      User.countDocuments({ role: "AUTHOR", status: "PENDING" }),
-      Blog.countDocuments({}),
-      Blog.countDocuments({ status: "PENDING" }),
-    ]);
+    const formatted = pendingBlogs.map((blog: any) => ({
+      id: blog._id,
+      title: blog.title,
+      author: blog.author_id?.name || "Unknown Author",
+      category: blog.category,
+      date: blog.created_at,
+    }));
 
-    return NextResponse.json({
-      users: usersCount,
-      pendingAuthors: pendingAuthorsCount,
-      pendingBlogs: pendingBlogsCount,
-      blogs: blogsCount,
-    }, { status: 200 });
+    return NextResponse.json(formatted, { status: 200 });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

@@ -20,6 +20,7 @@ export async function GET() {
       id: blog._id,
       title: blog.title,
       author: blog.author_id?.name || "Unknown Author",
+      status: blog.status,
       is_published: blog.is_published,
       image: blog.cover_image,
       category: blog.category,

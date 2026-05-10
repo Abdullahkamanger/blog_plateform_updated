@@ -11,10 +11,7 @@ export async function GET() {
     // 1. Fetch public blogs and populate the author's name
     // Handle backward compatibility: check for both status field and is_published
     const blogs = await Blog.find({ 
-      $or: [
-        { status: 'PUBLISHED' },
-        { status: { $exists: false }, is_published: true }
-      ],
+      status: 'PUBLISHED',
       is_archived: { $ne: true }
     })
       .populate("author_id", "name role bio social_links")

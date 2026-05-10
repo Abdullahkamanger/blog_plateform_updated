@@ -4,17 +4,19 @@ import { useState, useEffect } from 'react';
 import { Users, FileText, ShieldAlert } from 'lucide-react';
 import axios from 'axios';
 import AuthorApprovalTable from './components/AuthorApprovalTable';
+import BlogApprovalTable from './components/BlogApprovalTable';
 import UserManagementTable from './components/UserManagementTable';
 import BlogManagementHub from './components/BlogManagementHub';
 
 interface Stats {
   users: number;
-  pending: number;
+  pendingAuthors: number;
+  pendingBlogs: number;
   blogs: number;
 }
 
 const AdminDashboard = () => {
-  const [stats, setStats] = useState<Stats>({ users: 0, pending: 0, blogs: 0 });
+  const [stats, setStats] = useState<Stats>({ users: 0, pendingAuthors: 0, pendingBlogs: 0, blogs: 0 });
   const [activeTab, setActiveTab] = useState<'approvals' | 'users' | 'blogs'>('approvals');
 
   // Fetch quick stats for the dashboard header
@@ -36,14 +38,21 @@ const AdminDashboard = () => {
         {/* --- 1. HEADER STATS --- */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
           <StatCard 
+            title="Pending Authors" 
+            value={stats.pendingAuthors} 
+            icon={<ShieldAlert className="text-amber-500" />} 
+          />
+          <StatCard 
+            title="Pending Blogs" 
+            value={stats.pendingBlogs} 
+            icon={<FileText className="text-orange-500" />} 
+          />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+          <StatCard 
             title="Total Users" 
             value={stats.users} 
             icon={<Users className="text-blue-500" />} 
-          />
-          <StatCard 
-            title="Pending Authors" 
-            value={stats.pending} 
-            icon={<ShieldAlert className="text-amber-500" />} 
           />
           <StatCard 
             title="Total Blogs" 
@@ -73,7 +82,12 @@ const AdminDashboard = () => {
 
         {/* --- 3. DYNAMIC CONTENT --- */}
         <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
-          {activeTab === 'approvals' && <AuthorApprovalTable />}
+          {activeTab === 'approvals' && (
+            <div className="divide-y divide-slate-100 dark:divide-slate-800">
+              <AuthorApprovalTable />
+              <BlogApprovalTable />
+            </div>
+          )}
           {activeTab === 'users' && <UserManagementTable />}
           {activeTab === 'blogs' && <BlogManagementHub />}
         </div>
